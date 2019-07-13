@@ -199,7 +199,7 @@ int vtkvmtkSteepestDescentShooter::RequestData(
   vtkIdType i, j, k, h, l, m;
   vtkIdType poleId;
   vtkIdType npts, *pts, targetNpts, *targetPts, *cells;
-  vtkIdType ncells;
+  unsigned short ncells;
 
   if (!this->DescentArrayName)
     {

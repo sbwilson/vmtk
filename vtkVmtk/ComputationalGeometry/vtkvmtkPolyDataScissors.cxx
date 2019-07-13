@@ -68,7 +68,7 @@ int vtkvmtkPolyDataScissors::IsEdgeInCell(vtkPolyData *input, vtkIdType edgePoin
 int vtkvmtkPolyDataScissors::GetCellsOnSameSide(vtkPolyData* input, vtkIdType targetCellId0, vtkIdType targetCellId1, vtkIdType referenceCellId, vtkIdType linePointId0, vtkIdType linePointId1, vtkIdType linePointId2, vtkIdList *cellsOnSameSide)
 {
   vtkIdType i, j;
-  vtkIdType ncells;
+  unsigned short ncells;
   vtkIdType *cells;
   vtkIdType previousCellId;
   vtkIdType npts, *pts;
