@@ -30,6 +30,7 @@ Version:   $Revision: 1.5 $
 #include "vtkMath.h"
 #include "vtkPolyLine.h"
 #include "vtkLine.h"
+#include "vtkIdTypeArray.h"
 #include "vtkInformation.h"
 #include "vtkInformationVector.h"
 #include "vtkObjectFactory.h"
@@ -123,11 +124,7 @@ int vtkvmtkCapPolyData::RequestData(
     }
 
   // Execute
-#if (VTK_MAJOR_VERSION <= 5)
-  boundaryExtractor->SetInput(input);
-#else
   boundaryExtractor->SetInputData(input);
-#endif
   boundaryExtractor->Update();
 
   boundaries = boundaryExtractor->GetOutput();
@@ -215,7 +212,7 @@ int vtkvmtkCapPolyData::RequestData(
   return 1;
 }
 
-void vtkvmtkCapPolyData::PrintSelf(ostream& os, vtkIndent indent)
+void vtkvmtkCapPolyData::PrintSelf(std::ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os,indent);
 }

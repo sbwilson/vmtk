@@ -28,9 +28,7 @@ PURPOSE.  See the above copyright notice for more information.
 #include "vtkPointData.h"
 #include "vtkSmartPointer.h"
 #include "vtkVersion.h"
-#if (VTK_MAJOR_VERSION > 5)
 #include "vtkInterpolatedVelocityField.h"
-#endif
 
 #include "vtkvmtkStaticTemporalInterpolatedVelocityField.h"
 
@@ -38,6 +36,12 @@ PURPOSE.  See the above copyright notice for more information.
 
 vtkStandardNewMacro(vtkvmtkStaticTemporalStreamTracer);
 vtkCxxSetObjectMacro(vtkvmtkStaticTemporalStreamTracer, TimeStepsTable, vtkTable);
+
+#if VMTK_USE_LEGACY_INTERVAL_INFORMATION
+  #define vmtkIntervalInformation IntervalInformation
+#else
+  #define vmtkIntervalInformation vtkIntervalInformation
+#endif
 
 vtkvmtkStaticTemporalStreamTracer::vtkvmtkStaticTemporalStreamTracer()
 {
@@ -198,11 +202,7 @@ int vtkvmtkStaticTemporalStreamTracer::CheckInputs(vtkAbstractInterpolatedVeloci
         {
         *maxCellSize = cellSize;
         }
-#if (VTK_MAJOR_VERSION <= 5)
-      vtkAbstractInterpolatedVelocityField::SafeDownCast(func)->AddDataSet(inp);
-#else
       vtkInterpolatedVelocityField::SafeDownCast(func)->AddDataSet(inp);
-#endif
       numInputs++;
       }
     iterP->GoToNextItem();
@@ -470,10 +470,10 @@ void vtkvmtkStaticTemporalStreamTracer::Integrate(vtkDataSet *input0,
     // We will always pass an arc-length step size to the integrator.
     // If the user specifies a step size in cell length unit, we will
     // have to convert it to arc length.
-    IntervalInformation stepSize;  // either positive or negative
+    vmtkIntervalInformation stepSize;  // either positive or negative
     stepSize.Unit  = LENGTH_UNIT;
     stepSize.Interval = 0;
-    IntervalInformation aStep; // always positive
+    vmtkIntervalInformation aStep; // always positive
     aStep.Unit = LENGTH_UNIT;
     double step, minStep=0, maxStep=0;
     double stepTaken, accumTime=startTime;
@@ -572,11 +572,19 @@ void vtkvmtkStaticTemporalStreamTracer::Integrate(vtkDataSet *input0,
         aStep.Interval = this->MaximumPropagation - propagation;
         if ( stepSize.Interval >= 0 )
           {
+#if VMTK_USE_LEGACY_INTERVAL_INFORMATION
           stepSize.Interval = this->ConvertToLength( aStep, cellLength );
+#else
+          stepSize.Interval = vtkIntervalInformation::ConvertToLength(aStep, cellLength);
+#endif
           }
         else
           {
-          stepSize.Interval = this->ConvertToLength( aStep, cellLength ) * ( -1.0 );
+#if VMTK_USE_LEGACY_INTERVAL_INFORMATION
+          stepSize.Interval = this->ConvertToLength(aStep, cellLength) * (-1.0);
+#else
+          stepSize.Interval = vtkIntervalInformation::ConvertToLength(aStep, cellLength) * (-1.0);
+#endif
           }
         maxStep = stepSize.Interval;
         }
@@ -801,7 +809,7 @@ void vtkvmtkStaticTemporalStreamTracer::Integrate(vtkDataSet *input0,
   return;
 }
 
-void vtkvmtkStaticTemporalStreamTracer::PrintSelf(ostream& os, vtkIndent indent)
+void vtkvmtkStaticTemporalStreamTracer::PrintSelf(std::ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os,indent);
 

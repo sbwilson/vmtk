@@ -184,10 +184,10 @@ void vtkvmtkBoundaryReferenceSystems::OrientBoundaryNormalOutwards(vtkPolyData* 
   surface->BuildCells();
   surface->BuildLinks();
 
-  vtkIdType ncells;
   vtkIdType *cells;
-//  vtkIdType npts, *pts;
-	vtkSmartPointer<vtkIdList> points = vtkSmartPointer<vtkIdList>::New();
+  vtkIdType npts;
+  const vtkIdType *pts;
+  vtkIdType ncells;
 
   double boundaryPoint[3], neighborPoint[3];
 
@@ -207,13 +207,13 @@ void vtkvmtkBoundaryReferenceSystems::OrientBoundaryNormalOutwards(vtkPolyData* 
     surface->GetPointCells(boundaryIds->GetId(j),ncells,cells);
     for (int c=0; c<ncells; c++)
       {
-      surface->GetCellPoints(cells[c],points);
-      for (int p=0; p<points->GetNumberOfIds(); p++)
+      surface->GetCellPoints(cells[c],npts,pts);
+      for (int p=0; p<npts; p++)
         {
-        if (boundaryIds->IsId(points->GetId(p)) == -1)
+        if (boundaryIds->IsId(pts[p]) == -1)
           {
           surface->GetPoint(boundaryIds->GetId(j),boundaryPoint);
-          surface->GetPoint(points->GetId(p),neighborPoint);
+          surface->GetPoint(pts[p],neighborPoint);
           for (k=0; k<3; k++)
             {
             neighborsToBoundaryNormal[k] += boundaryPoint[k] - neighborPoint[k];
@@ -319,11 +319,7 @@ int vtkvmtkBoundaryReferenceSystems::RequestData(
   point2Array->SetNumberOfComponents(3);
 
   vtkvmtkPolyDataBoundaryExtractor* boundaryExtractor = vtkvmtkPolyDataBoundaryExtractor::New();
-#if (VTK_MAJOR_VERSION <= 5)
-  boundaryExtractor->SetInput(input);
-#else
   boundaryExtractor->SetInputData(input);
-#endif
 
   boundaryExtractor->Update();
 
@@ -377,7 +373,7 @@ int vtkvmtkBoundaryReferenceSystems::RequestData(
   return 1;
 }
 
-void vtkvmtkBoundaryReferenceSystems::PrintSelf(ostream& os, vtkIndent indent)
+void vtkvmtkBoundaryReferenceSystems::PrintSelf(std::ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os,indent);
 }

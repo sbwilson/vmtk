@@ -21,7 +21,7 @@
 #include "itkHessianSmoothed3DToVesselnessMeasureImageFilter.h"
 #include "itkMultiScaleHessianBasedMeasureImageFilter.h"
 #include "itkAnisotropicDiffusionVesselEnhancementFunction.h"
-#include "itkMultiThreader.h"
+#include "itkPlatformMultiThreader.h"
 #include "itkSymmetricSecondRankTensor.h"
 #include "itkSymmetricEigenVectorAnalysisImageFilter.h"
 
@@ -227,7 +227,16 @@ private:
     AnisotropicDiffusionVesselEnhancementImageFilter *Filter;
     TimeStepType TimeStep;
     std::vector< TimeStepType > TimeStepList;
+#if ITK_VERSION_MAJOR > 5 || (ITK_VERSION_MAJOR == 5 && ITK_VERSION_MINOR >= 3)
+    // ResolveTimeStep argument type was changed to uint_8_t in a ITK-5.3 release candidate:
+    // https://github.com/InsightSoftwareConsortium/ITK/commit/b66133ab53369bdf265348c0c31cfa6451b53934
+    // Then, ResolveTimeStep argument type was changed to itk::Boolean in a subsequent ITK-5.3 release candidate:
+    // https://github.com/InsightSoftwareConsortium/ITK/commit/bc9ba8540f96c0fa4e9100b25b05eb812074a64e
+    // Therefore, this is the correct implementation for the latest ITK-5.3 version:
+    std::vector< itk::Boolean > ValidTimeStepList;
+#else
     std::vector< bool > ValidTimeStepList;
+#endif
   };
 
   //struct DenseFDThreadStruct
@@ -240,11 +249,11 @@ private:
     
   /** This callback method uses ImageSource::SplitRequestedRegion to acquire an
    * output region that it passes to ThreadedApplyUpdate for processing. */
-  static ITK_THREAD_RETURN_TYPE ApplyUpdateThreaderCallback( void *arg );
+  static itk::ITK_THREAD_RETURN_TYPE ApplyUpdateThreaderCallback( void *arg );
   
   /** This callback method uses SplitUpdateContainer to acquire a region
    * which it then passes to ThreadedCalculateChange for processing. */
-  static ITK_THREAD_RETURN_TYPE CalculateChangeThreaderCallback( void *arg );
+  static itk::ITK_THREAD_RETURN_TYPE CalculateChangeThreaderCallback( void *arg );
  
   /** The buffer that holds the updates for an iteration of the algorithm. */
   typename UpdateBufferType::Pointer m_UpdateBuffer;

@@ -63,11 +63,11 @@ void vtkvmtkVoronoiDiagram3D::ExtractUniqueEdges(vtkUnstructuredGrid* input, vtk
   int isVisited;
   vtkIdType i, j, k;
   vtkIdType edgePts[2];
-//  vtkIdType npts, *pts;
+  vtkIdType npts;
+  const vtkIdType *pts;
   vtkIntArray* visited;
   vtkIdList* pointCells;
   vtkIdList* insertedLoopPoints;
-	vtkSmartPointer<vtkIdList> points = vtkSmartPointer<vtkIdList>::New();
 
   visited = vtkIntArray::New();
   visited->SetNumberOfTuples(input->GetNumberOfPoints());
@@ -85,15 +85,15 @@ void vtkvmtkVoronoiDiagram3D::ExtractUniqueEdges(vtkUnstructuredGrid* input, vtk
     input->GetPointCells(i,pointCells);
     for (j=0; j<pointCells->GetNumberOfIds(); j++)
       {
-      input->GetCellPoints(pointCells->GetId(j),points);
-      for (k=0; k<points->GetNumberOfIds(); k++)
+      input->GetCellPoints(pointCells->GetId(j),npts,pts);
+      for (k=0; k<npts; k++)
         {
-        isVisited = visited->GetValue(points->GetId(k) );
+        isVisited = visited->GetValue(pts[k]);
         if (!isVisited)
-          if (insertedLoopPoints->IsId(points->GetId(k))==-1)
+          if (insertedLoopPoints->IsId(pts[k])==-1)
             {
-            edgePts[1] = points->GetId(k);
-            insertedLoopPoints->InsertNextId(points->GetId(k));
+            edgePts[1] = pts[k];
+            insertedLoopPoints->InsertNextId(pts[k]);
             edgeArray->InsertNextCell(2,edgePts);
             }
         }
@@ -109,8 +109,9 @@ void vtkvmtkVoronoiDiagram3D::ExtractUniqueEdges(vtkUnstructuredGrid* input, vtk
 void vtkvmtkVoronoiDiagram3D::BuildVoronoiPolys(vtkUnstructuredGrid* input, vtkCellArray* voronoiPolys)
 {
   bool boundaryTetra;
-//  vtkIdType npts, *pts;
-//  pts = NULL;
+  vtkIdType npts;
+  const vtkIdType *pts;
+  pts = NULL;
   vtkIdType neighborTetraId;
   vtkIdType i, k, h;
   vtkCellArray* edgeArray;
@@ -119,7 +120,6 @@ void vtkvmtkVoronoiDiagram3D::BuildVoronoiPolys(vtkUnstructuredGrid* input, vtkC
   vtkIdList* neighborTrianglePointIds;
   vtkIdList* neighborNeighborCells;
   vtkIdList* linePointIds;
-	vtkSmartPointer<vtkIdList> points = vtkSmartPointer<vtkIdList>::New();
   vtkTetra* neighborTetra;
 
   edgeArray = vtkCellArray::New();
@@ -134,10 +134,10 @@ void vtkvmtkVoronoiDiagram3D::BuildVoronoiPolys(vtkUnstructuredGrid* input, vtkC
   edgeArray->InitTraversal();
   for (i=0; i<edgeArray->GetNumberOfCells(); i++)
     {
-    edgeArray->GetNextCell(points);
+    edgeArray->GetNextCell(npts,pts);
     linePointIds->Initialize();
-    linePointIds->InsertNextId(points->GetId(0) );
-    linePointIds->InsertNextId(points->GetId(1));
+    linePointIds->InsertNextId(pts[0]);
+    linePointIds->InsertNextId(pts[1]);
                 
     boundaryTetra = false;
     neighborCells->Initialize();
@@ -310,7 +310,7 @@ int vtkvmtkVoronoiDiagram3D::RequestData(
   return 1;
 }
 
-void vtkvmtkVoronoiDiagram3D::PrintSelf(ostream& os, vtkIndent indent)
+void vtkvmtkVoronoiDiagram3D::PrintSelf(std::ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os,indent);
 }

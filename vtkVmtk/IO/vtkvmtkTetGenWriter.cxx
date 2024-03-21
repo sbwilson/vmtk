@@ -52,20 +52,20 @@ void vtkvmtkTetGenWriter::WriteData()
 {
   vtkUnstructuredGrid *input= vtkUnstructuredGrid::SafeDownCast(this->GetInput());
 
-  if (!this->FileName)
+  if (!this->GetFileName())
     {
     vtkErrorMacro(<<"FileName not set.");
     return;
     }
 
-  std::string nodeFileName = this->FileName;
+  std::string nodeFileName = this->GetFileName();
   nodeFileName += ".node";
 
-  std::string eleFileName = this->FileName;
+  std::string eleFileName = this->GetFileName();
   eleFileName += ".ele";
 
-  ofstream nodeStream(nodeFileName.c_str());
-  ofstream eleStream(eleFileName.c_str());
+  std::ofstream nodeStream(nodeFileName.c_str());
+  std::ofstream eleStream(eleFileName.c_str());
  
   if (!nodeStream.good())
     {
@@ -198,7 +198,7 @@ void vtkvmtkTetGenWriter::WriteData()
   quadraticTetraCellIdArray->Delete();
 }
 
-void vtkvmtkTetGenWriter::PrintSelf(ostream& os, vtkIndent indent)
+void vtkvmtkTetGenWriter::PrintSelf(std::ostream& os, vtkIndent indent)
 {
   vtkUnstructuredGridWriter::PrintSelf(os,indent);
 }

@@ -9,8 +9,8 @@
 ##   Copyright (c) Luca Antiga, David Steinman. All rights reserved.
 ##   See LICENSE file for details.
 
-##      This software is distributed WITHOUT ANY WARRANTY; without even 
-##      the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+##      This software is distributed WITHOUT ANY WARRANTY; without even
+##      the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 ##      PURPOSE.  See the above copyright notices for more information.
 
 from __future__ import absolute_import #NEEDS TO STAY AS TOP LEVEL MODULE FOR Py2-3 COMPATIBILITY
@@ -57,7 +57,7 @@ class vmtkPointTransform(pypes.pypeScript):
         transform.SetInput(matrix)
 
         outputPoints = []
-        for i in range(len(self.Points)/3):
+        for i in range(len(self.Points)//3):
             point = [self.Points[3*i+0],self.Points[3*i+1],self.Points[3*i+2]]
             outputPoint = transform.TransformPoint(point)
             outputPoints.append(outputPoint)

@@ -198,9 +198,9 @@ int vtkvmtkSteepestDescentShooter::RequestData(
 
   vtkIdType i, j, k, h, l, m;
   vtkIdType poleId;
-  vtkIdType /*npts, *pts, targetNpts, *targetPts,*/ *cells;
-	vtkSmartPointer<vtkIdList> points = vtkSmartPointer<vtkIdList>::New();
-	vtkSmartPointer<vtkIdList> targetPoints = vtkSmartPointer<vtkIdList>::New();
+  vtkIdType npts, targetNpts, *cells;
+  const vtkIdType *pts;
+  const vtkIdType *targetPts;
   vtkIdType ncells;
 
   if (!this->DescentArrayName)
@@ -293,18 +293,18 @@ int vtkvmtkSteepestDescentShooter::RequestData(
 
   for (h=this->Target->GetNumberOfCells()-1; h>=0; h--)
     {
-    this->Target->GetCellPoints(h,targetPoints);
-    for (l=0; l<targetPoints->GetNumberOfIds(); l++)
+    this->Target->GetCellPoints(h,targetNpts,targetPts);
+    for (l=0; l<targetNpts; l++)
       {
       for (m=0; m<2; m++)
         {
-        input->GetPointCells(static_cast<vtkIdType>(this->EdgeArray->GetComponent(targetPoints->GetId(l),m)),ncells,cells);
+        input->GetPointCells(static_cast<vtkIdType>(this->EdgeArray->GetComponent(targetPts[l],m)),ncells,cells);
         for (j=0; j<ncells; j++)
           {
-          input->GetCellPoints(cells[j],points);
-          for (k=0; k<points->GetNumberOfIds(); k++)
+          input->GetCellPoints(cells[j],npts,pts);
+          for (k=0; k<npts; k++)
             {
-            this->TargetArray->SetValue(points->GetId(k),h);
+            this->TargetArray->SetValue(pts[k],h);
             }
           }
         }
@@ -328,7 +328,7 @@ int vtkvmtkSteepestDescentShooter::RequestData(
   return 1;
 }
 
-void vtkvmtkSteepestDescentShooter::PrintSelf(ostream& os, vtkIndent indent)
+void vtkvmtkSteepestDescentShooter::PrintSelf(std::ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os,indent);
 }

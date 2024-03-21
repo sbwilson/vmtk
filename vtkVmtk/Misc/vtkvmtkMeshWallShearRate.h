@@ -32,7 +32,7 @@ class VTK_VMTK_MISC_EXPORT vtkvmtkMeshWallShearRate : public vtkPolyDataAlgorith
 {
   public: 
   vtkTypeMacro(vtkvmtkMeshWallShearRate,vtkPolyDataAlgorithm);
-  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE; 
+  void PrintSelf(std::ostream& os, vtkIndent indent) override;
 
   static vtkvmtkMeshWallShearRate *New();
 
@@ -46,6 +46,10 @@ class VTK_VMTK_MISC_EXPORT vtkvmtkMeshWallShearRate : public vtkPolyDataAlgorith
   vtkGetMacro(ComputeIndividualPartialDerivatives,int);
   vtkBooleanMacro(ComputeIndividualPartialDerivatives,int);
 
+  vtkSetMacro(UseFullStrainRateTensor,int);
+  vtkGetMacro(UseFullStrainRateTensor,int);
+  vtkBooleanMacro(UseFullStrainRateTensor,int);
+
   vtkSetMacro(ConvergenceTolerance,double);
   vtkGetMacro(ConvergenceTolerance,double);
 
@@ -56,8 +60,8 @@ class VTK_VMTK_MISC_EXPORT vtkvmtkMeshWallShearRate : public vtkPolyDataAlgorith
   vtkvmtkMeshWallShearRate();
   ~vtkvmtkMeshWallShearRate();  
 
-  int FillInputPortInformation(int, vtkInformation *info) VTK_OVERRIDE;
-  virtual int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *) VTK_OVERRIDE;
+  int FillInputPortInformation(int, vtkInformation *info) override;
+  virtual int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *) override;
 
   char* VelocityArrayName;
   char* WallShearRateArrayName;
@@ -66,6 +70,7 @@ class VTK_VMTK_MISC_EXPORT vtkvmtkMeshWallShearRate : public vtkPolyDataAlgorith
 
   double ConvergenceTolerance;
   int QuadratureOrder;
+  int UseFullStrainRateTensor;
 
   private:
   vtkvmtkMeshWallShearRate(const vtkvmtkMeshWallShearRate&);  // Not implemented.

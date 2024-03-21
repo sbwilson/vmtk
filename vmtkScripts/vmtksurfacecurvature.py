@@ -9,8 +9,8 @@
 ##   Copyright (c) Luca Antiga, David Steinman. All rights reserved.
 ##   See LICENSE file for details.
 
-##      This software is distributed WITHOUT ANY WARRANTY; without even 
-##      the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+##      This software is distributed WITHOUT ANY WARRANTY; without even
+##      the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 ##      PURPOSE.  See the above copyright notices for more information.
 
 from __future__ import absolute_import #NEEDS TO STAY AS TOP LEVEL MODULE FOR Py2-3 COMPATIBILITY
@@ -26,7 +26,7 @@ class vmtkSurfaceCurvature(pypes.pypeScript):
     def __init__(self):
 
         pypes.pypeScript.__init__(self)
-        
+
         self.Surface = None
         self.ReferenceSurface = None
 
@@ -111,7 +111,7 @@ class vmtkSurfaceCurvature(pypes.pypeScript):
                 values.sort()
                 if not values:
                     continue
-                medianValue = values[(len(values) - 1)/2]
+                medianValue = values[(len(values) - 1)//2]
                 activeScalars.SetTuple1(pointId,medianValue)
 
         if self.MedianFiltering:
@@ -125,7 +125,7 @@ class vmtkSurfaceCurvature(pypes.pypeScript):
                 values.sort()
                 if not values:
                     continue
-                medianValue = values[(len(values) - 1)/2]
+                medianValue = values[(len(values) - 1)//2]
                 activeScalars.SetTuple1(i,medianValue)
 
         if self.BoundedReciprocal:

@@ -3,8 +3,8 @@
 Program:   VMTK
 Module:    $RCSfile: vtkvmtkMeshWallShearRate.cxx,v $
 Language:  C++
-Date:      $Date: 2006/07/27 08:28:36 $
-Version:   $Revision: 1.1 $
+Date:      $Date: 2020/02/17 10:20:00 $
+Version:   $Revision: 2.0 $
 
   Copyright (c) Luca Antiga, David Steinman. All rights reserved.
   See LICENSE file for details.
@@ -45,6 +45,7 @@ vtkvmtkMeshWallShearRate::vtkvmtkMeshWallShearRate()
   this->ComputeIndividualPartialDerivatives = 0;
   this->ConvergenceTolerance = 1E-6;
   this->QuadratureOrder = 3;
+  this->UseFullStrainRateTensor = 0;
 }
 
 vtkvmtkMeshWallShearRate::~vtkvmtkMeshWallShearRate()
@@ -97,11 +98,7 @@ int vtkvmtkMeshWallShearRate::RequestData(
   char gradientArrayName[] = "VelocityGradient";
 
   vtkvmtkUnstructuredGridGradientFilter* gradientFilter = vtkvmtkUnstructuredGridGradientFilter::New();
-#if (VTK_MAJOR_VERSION <= 5)
-  gradientFilter->SetInput(input);
-#else
   gradientFilter->SetInputData(input);
-#endif
   gradientFilter->SetInputArrayName(this->VelocityArrayName);
   gradientFilter->SetGradientArrayName(gradientArrayName);
   gradientFilter->SetQuadratureOrder(this->QuadratureOrder);
@@ -110,19 +107,11 @@ int vtkvmtkMeshWallShearRate::RequestData(
   gradientFilter->Update();
 
   vtkGeometryFilter* geometryFilter = vtkGeometryFilter::New();
-#if (VTK_MAJOR_VERSION <= 5)
-  geometryFilter->SetInput(gradientFilter->GetOutput());
-#else
   geometryFilter->SetInputConnection(gradientFilter->GetOutputPort());
-#endif
   geometryFilter->Update();
 
   vtkPolyDataNormals* normalsFilter = vtkPolyDataNormals::New();
-#if (VTK_MAJOR_VERSION <= 5)
-  normalsFilter->SetInput(geometryFilter->GetOutput());
-#else
   normalsFilter->SetInputConnection(geometryFilter->GetOutputPort());
-#endif
   normalsFilter->AutoOrientNormalsOn();
   normalsFilter->ConsistencyOn();
   normalsFilter->SplittingOff();
@@ -150,17 +139,68 @@ int vtkvmtkMeshWallShearRate::RequestData(
   double velocityGradient[9];
   double normal[3];
   double wallShearRate[3];
-  
-  int i, j;
-  for (i=0; i<numberOfPoints; i++)
+ 
+  int i, j, k;
+
+  if (!this->UseFullStrainRateTensor)
     {
-    velocityGradientArray->GetTuple(i,velocityGradient);
-    normalsArray->GetTuple(i,normal);
-    for (j=0; j<3; j++)
-      {
-      wallShearRate[j] = -normal[0] * velocityGradient[3*j + 0] - normal[1] * velocityGradient[3*j + 1] - normal[2] * velocityGradient[3*j + 2];
+    for (i=0; i<numberOfPoints; i++)
+      { 
+      velocityGradientArray->GetTuple(i,velocityGradient);
+      normalsArray->GetTuple(i,normal);
+      for (j=0; j<3; j++)
+        {
+        wallShearRate[j] = -normal[0] * velocityGradient[3*j + 0] - normal[1] * velocityGradient[3*j + 1] - normal[2] * velocityGradient[3*j + 2];  
+        }
+      wallShearRateArray->SetTuple(i,wallShearRate);
       }
-    wallShearRateArray->SetTuple(i,wallShearRate);
+    }
+  else
+    {
+
+    /**********************************************************************
+      Calculate strain rate tensor: E = 0.5 * (\nabla u + (\nabla u)^T)
+      Calculate wall shear rate vector: tau = -2 * E*n * (1-n^T*n)
+      Reference: Matyka et al., http://dx.doi.org/10.1016/j.compfluid.2012.12.018
+    **********************************************************************/
+
+    double normalShear, shearVector[3], strainRateTensor[9];
+
+    for (i=0; i<numberOfPoints; i++)
+      {
+
+      // compute strain rate tensor
+      velocityGradientArray->GetTuple(i,velocityGradient);
+      for (j=0; j<3; j++)
+        {
+	for (k=0; k<3; k++)
+          {
+	  strainRateTensor[3*j + k] = 0.5 * (velocityGradient[3*j + k] + velocityGradient[3*k + j]);
+	  }
+        }
+
+      // compute shear rate vector and normal projection
+      normalsArray->GetTuple(i,normal);
+      normalShear = 0.0;
+      for (j=0; j<3; j++)
+        {
+	shearVector[j] = 0.0;
+	for (k=0; k<3; k++)
+          {
+	  shearVector[j] += strainRateTensor[3*j + k] * normal[k];
+	  }
+	normalShear += shearVector[j] * normal[j];
+        }
+
+      // compute wall shear rate
+      for (j=0; j<3; j++)
+        {
+	// sign due to normals pointing outwards
+	wallShearRate[j] = -2.0 * (shearVector[j] - normalShear*normal[j]);
+        }
+
+      wallShearRateArray->SetTuple(i,wallShearRate);
+      }
     }
 
   output->DeepCopy(outputSurface);
@@ -173,7 +213,7 @@ int vtkvmtkMeshWallShearRate::RequestData(
   return 1;
 }
 
-void vtkvmtkMeshWallShearRate::PrintSelf(ostream& os, vtkIndent indent)
+void vtkvmtkMeshWallShearRate::PrintSelf(std::ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os,indent);
 }

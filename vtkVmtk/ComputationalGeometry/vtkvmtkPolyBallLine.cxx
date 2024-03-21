@@ -71,8 +71,8 @@ double vtkvmtkPolyBallLine::ComplexDot(double x[4], double y[4])
 double vtkvmtkPolyBallLine::EvaluateFunction(double x[3])
 {
   vtkIdType i, k;
-//  vtkIdType npts, *pts;
-	vtkSmartPointer<vtkIdList> points = vtkSmartPointer<vtkIdList>::New();
+  vtkIdType npts;
+  const vtkIdType *pts;
   double polyballFunctionValue, minPolyBallFunctionValue;
   double point0[3], point1[3];
   double radius0, radius1;
@@ -117,9 +117,6 @@ double vtkvmtkPolyBallLine::EvaluateFunction(double x[3])
     }
 
   this->Input->BuildCells();
-#if (VTK_MAJOR_VERSION <= 5)
-  this->Input->Update();
-#endif
 
   minPolyBallFunctionValue = VTK_VMTK_LARGE_DOUBLE;
 
@@ -159,16 +156,16 @@ double vtkvmtkPolyBallLine::EvaluateFunction(double x[3])
       continue;
       }
 
-    this->Input->GetCellPoints(cellId,points);
+    this->Input->GetCellPoints(cellId,npts,pts);
     
-    for (i=0; i<points->GetNumberOfIds()-1; i++)
+    for (i=0; i<npts-1; i++)
       {
-      this->Input->GetPoint(points->GetId(i),point0);
-      this->Input->GetPoint(points->GetId(i+1),point1);
+      this->Input->GetPoint(pts[i],point0);
+      this->Input->GetPoint(pts[i+1],point1);
       if (this->UseRadiusInformation)
         {
-        radius0 = polyballRadiusArray->GetComponent(points->GetId(i),0);
-        radius1 = polyballRadiusArray->GetComponent(points->GetId(i+1),0);
+        radius0 = polyballRadiusArray->GetComponent(pts[i],0);
+        radius1 = polyballRadiusArray->GetComponent(pts[i+1],0);
         }
       else
         {
@@ -247,7 +244,7 @@ void vtkvmtkPolyBallLine::EvaluateGradient(double x[3], double n[3])
   // TODO
 }
 
-void vtkvmtkPolyBallLine::PrintSelf(ostream& os, vtkIndent indent)
+void vtkvmtkPolyBallLine::PrintSelf(std::ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os,indent);
 

@@ -93,29 +93,30 @@ vtkIdType vtkvmtkSimplifyVoronoiDiagram::IsBoundaryEdge(vtkCellLinks* links, vtk
 }
 
 int vtkvmtkSimplifyVoronoiDiagram::RequestData(
-  vtkInformation *vtkNotUsed(request),
-  vtkInformationVector **inputVector,
-  vtkInformationVector *outputVector)
+  vtkInformation* vtkNotUsed(request),
+  vtkInformationVector** inputVector,
+  vtkInformationVector* outputVector)
 {
-  vtkInformation *inInfo = inputVector[0]->GetInformationObject(0);
-  vtkInformation *outInfo = outputVector->GetInformationObject(0);
+  vtkInformation* inInfo = inputVector[0]->GetInformationObject(0);
+  vtkInformation* outInfo = outputVector->GetInformationObject(0);
 
-  vtkPolyData *input = vtkPolyData::SafeDownCast(
+  vtkPolyData* input = vtkPolyData::SafeDownCast(
     inInfo->Get(vtkDataObject::DATA_OBJECT()));
-  vtkPolyData *output = vtkPolyData::SafeDownCast(
+  vtkPolyData* output = vtkPolyData::SafeDownCast(
     outInfo->Get(vtkDataObject::DATA_OBJECT()));
 
   bool anyRemoved, removeCell, considerPoint;
   bool* isUnremovable;
   vtkIdType i, j, id;
   vtkIdType n;
-  vtkIdType /*npts, *pts,*/ ncells;
-//  npts = 0;
-//  pts = NULL;
-	vtkSmartPointer<vtkIdList> points = vtkSmartPointer<vtkIdList>::New();
-	
+  vtkIdType npts, ncells;
+  const vtkIdType *pts;
+  vtkPolyData* poly = vtkPolyData::New();
+  poly->SetPoints(input->GetPoints());
+  npts = 0;
+  pts = NULL;
   vtkIdType edge[2];
-  vtkCellArray *currentPolys;
+  vtkCellArray* currentPolys;
   vtkCellLinks* currentLinks;
   vtkIdType newCellId;
   vtkCellArray* inputPolys = input->GetPolys();
@@ -184,8 +185,23 @@ int vtkvmtkSimplifyVoronoiDiagram::RequestData(
   currentPolys->DeepCopy(inputPolys);
 
   currentLinks->Allocate(input->GetNumberOfPoints());
-//  currentLinks->BuildLinks(input,currentPolys);
-  currentLinks->BuildLinks(input);
+
+  // Reworking cell links classes for performance and consistent API
+  // See https://github.com/Kitware/VTK/commit/88efc809a25130c2ab83dd89a80cea458e3bb56a
+  // #pragma message "vtkvmtkSimplifyVoronoiDiagram::RequestData not functional. Must be updated based on Kitware/VTK@88efc809a"
+  // if (true)
+  //   {
+  //   vtkErrorMacro(<< "vtkvmtkSimplifyVoronoiDiagram::RequestData is not functionnal when built against VTK >= 9");
+  //   return 0;
+  //   }
+  poly->SetPolys(currentPolys);
+  
+#if (VTK_MAJOR_VERSION >= 9 && VTK_MINOR_VERSION >= 0 && VTK_BUILD_VERSION >= 20221108)
+  currentLinks->SetDataSet(poly);
+  currentLinks->BuildLinks();
+#else
+  currentLinks->BuildLinks(poly);
+#endif
 
   anyRemoved = true;
   while (anyRemoved)
@@ -196,9 +212,9 @@ int vtkvmtkSimplifyVoronoiDiagram::RequestData(
     currentPolys->InitTraversal();
     for (i=0; i<currentPolys->GetNumberOfCells(); i++)
       {
-      currentPolys->GetNextCell(points);
+      currentPolys->GetNextCell(npts,pts);
       
-      if (points->GetNumberOfIds() == 0)
+      if (npts==0)
         {
         continue;
         }
@@ -206,10 +222,10 @@ int vtkvmtkSimplifyVoronoiDiagram::RequestData(
       newCell->Initialize();
       if (this->Simplification==VTK_VMTK_REMOVE_BOUNDARY_POINTS)
         {
-        for (j=0; j<points->GetNumberOfIds(); j++)
+        for (j=0; j<npts; j++)
           {
           considerPoint = false;
-          ncells = currentLinks->GetNcells(points->GetId(j));
+          ncells = currentLinks->GetNcells(pts[j]);
         
           if (ncells==1)
             {
@@ -218,9 +234,9 @@ int vtkvmtkSimplifyVoronoiDiagram::RequestData(
 
           if (considerPoint)
             {
-            if (isUnremovable[points->GetId(j)])
+            if (isUnremovable[pts[j]])
               {
-              newCell->InsertNextId(points->GetId(j));
+              newCell->InsertNextId(pts[j]);
               }
             else
               {
@@ -229,7 +245,7 @@ int vtkvmtkSimplifyVoronoiDiagram::RequestData(
             }
           else
             {
-            newCell->InsertNextId(points->GetId(j));
+            newCell->InsertNextId(pts[j]);
             }
           }
         }
@@ -238,10 +254,10 @@ int vtkvmtkSimplifyVoronoiDiagram::RequestData(
         removeCell = false;
         if (!isUnremovable[i])
           {
-          for (j=0; j<points->GetNumberOfIds(); j++)
+          for (j=0; j<npts; j++)
             {
-				edge[0] = points->GetId(j);
-            edge[1] = points->GetId( (j+1) % points->GetNumberOfIds() );
+            edge[0] = pts[j];
+            edge[1] = pts[(j+1)%npts];
 
             if (this->IsBoundaryEdge(currentLinks,edge)>0)
               {
@@ -257,9 +273,9 @@ int vtkvmtkSimplifyVoronoiDiagram::RequestData(
           }
         else
           {
-          for (j=0; j<points->GetNumberOfIds(); j++)
+          for (j=0; j<npts; j++)
             {
-            newCell->InsertNextId( points->GetId(j) );
+            newCell->InsertNextId(pts[j]);
             }
           }
         }
@@ -274,8 +290,18 @@ int vtkvmtkSimplifyVoronoiDiagram::RequestData(
     currentLinks->Delete();
     currentLinks = vtkCellLinks::New();
     currentLinks->Allocate(input->GetNumberOfPoints());
-    // currentLinks->BuildLinks(input,currentPolys);
-	currentLinks->BuildLinks(input);
+
+    // Reworking cell links classes for performance and consistent API
+    // See https://github.com/Kitware/VTK/commit/88efc809a25130c2ab83dd89a80cea458e3bb56a
+    // #pragma message "vtkvmtkSimplifyVoronoiDiagram::RequestData not functional. Must be updated based on Kitware/VTK@88efc809a"
+    // vtkErrorMacro(<< "!");
+    poly->SetPolys(currentPolys);
+#if (VTK_MAJOR_VERSION >= 9 && VTK_MINOR_VERSION >= 0 && VTK_BUILD_VERSION >= 20221108)
+    currentLinks->SetDataSet(poly);
+    currentLinks->BuildLinks();
+#else
+    currentLinks->BuildLinks(poly);
+#endif
 
     newPolys->Delete();
     newCell->Delete();
@@ -292,18 +318,18 @@ int vtkvmtkSimplifyVoronoiDiagram::RequestData(
     currentPolys->InitTraversal();
     for (i=0; i<currentPolys->GetNumberOfCells(); i++)
       {
-      currentPolys->GetNextCell(points);
+      currentPolys->GetNextCell(npts,pts);
       newCell->Initialize();
-      if (points->GetNumberOfIds()==0)
+      if (npts==0)
         {
-        newPolys->InsertNextCell(points);
+        newPolys->InsertNextCell(npts,pts);
         continue;
         }
       if (!isUnremovable[i])
         {
-        for (j=0; j<points->GetNumberOfIds(); j++)
+        for (j=0; j<npts; j++)
           {
-          newCell->InsertNextId(points->GetId(j));
+          newCell->InsertNextId(pts[j]);
           }
         }
       if (newCell->GetNumberOfIds() > 2)
@@ -317,6 +343,7 @@ int vtkvmtkSimplifyVoronoiDiagram::RequestData(
     }
 
   // simply passes points and point data (eventually vtkCleanPolyData)
+  // will have less cells but same points
   output->SetPoints(input->GetPoints());
   output->GetPointData()->PassData(input->GetPointData());
 
@@ -325,12 +352,12 @@ int vtkvmtkSimplifyVoronoiDiagram::RequestData(
 
   currentLinks->Delete();
   currentPolys->Delete();
-  delete[] isUnremovable;
+  poly->Delete();
 
   return 1;
 }
 
-void vtkvmtkSimplifyVoronoiDiagram::PrintSelf(ostream& os, vtkIndent indent)
+void vtkvmtkSimplifyVoronoiDiagram::PrintSelf(std::ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os,indent);
 }
